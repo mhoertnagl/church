@@ -1,0 +1,485 @@
+{******************************************************************************
+ * Church - Functional Programming Language                                   *
+ ******************************************************************************
+ * Curch is a small untyped functional language compiler and G-Machine        *
+ * interpreter based on the tutorial in [1] and enirely programmed with the   *
+ * educational language (Open) Turing.                                        *
+ * Church supports integers, strings, custom data constructors and lists. The *
+ * pattern matching mechanism is limited to one level of data constructors    *
+ * only. Pattern matching cannot dispatch integers or strings.                *
+ * Additionally Church supports built-in if..then..else..end blocks, but      *
+ * without elsif subblocks.                                                   *
+ *                                                                            *
+ * Special symbols ( = < > | - + * _ / ! : ? & % $ ~ # . @ ^ \ ) can be       *
+ * defined to be either a postfix operator, an inifx operator (e.g. list      *
+ * concatenation with h::t) or a postfix operator (e.g. faculty 4!).          *
+ *                                                                            *
+ * There is no operator precedence, so careful parenthesization is important. *
+ * For instance 4! + 1 will be 120 (5!). The correct result can be obtained   *
+ * either write (4!) + 1 or 1 + 4! because of the right associativity of the  *
+ * primitve binary operators + - * / < > <= >= == != || &&.                   *
+ * Application is left associative but is second in precedence after right    *
+ * associative primitive binary operators.                                    *
+ *                                                                            *
+ * Over saturated functions may yield infinite computations. E.g. the twice   *
+ * applied identity function I I 3 will not terminate. Additional parentheses *
+ * resolve the problem: I (I 3).                                              *
+ *                                                                            *
+ * REFERENCES                                                                 *
+ *  [1] Implementing Functional Languages: a tutorial,                        *
+ *      Simon L Peyton Jones and David R Lester, March 23, 2000               *
+ *  [2] ML for the Working Programmer, Lawrence C. Paulson, Second Edition,   *
+ *      Cambridge University Press 1997, ISBN: 0 521 57050 6                  *
+ *  [3] Java 2 Platform SE v1.4.2 Documentation                               *
+ *      <http://docs.oracle.com/javase/1.4.2/docs/api/>                       *
+ *  [4] The Haskell 98 Report - 8 Standard Prelude                            *
+ *      <http://www.haskell.org/onlinereport/standard-prelude.html>           *
+ ******************************************************************************
+ *  Copyright (C) 2012  Hoertnagl Mathias <mathias.hoertnagl@gmail.com>       *
+ *                                                                            *
+ * This program is free software: you can redistribute it and/or modify it    *
+ * under the terms of the GNU General Public License as published by the Free *
+ * Software Foundation, either version 3 of the License, or (at your option)  *
+ * any later version.                                                         *
+ *                                                                            *
+ * This program is distributed in the hope that it will be useful, but        *
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY *
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License   *
+ * for more details.                                                          *
+ *                                                                            *
+ * You should have received a copy of the GNU General Public License along    *
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.            *
+ ******************************************************************************}
+
+{ Identity function. }
+let I x = x;
+{ K combinator. Returns the frist of two arguments. }
+let K x y = x;
+{ Returns the second of two arguments. }
+let K1 x y = y;
+{ S combinator. }
+let S f g x = f x (g x);
+
+{**
+ * Composition of two single-argument functions.
+ *
+ * @param f  Outer single-argument function.
+ * @param g  Inner single-argument function.
+ * @return  f (g x)
+ *}
+let _._ f g x = f (g x);
+
+{**
+ * Flips the two parameters x and y before applying the function f.
+ *
+ * @param f  A double-argument function.
+ * @param x  First parameter of f.
+ * @param y  Second parameter of f.
+ * @return  The flipped function application f y x.
+ *}
+let flip f x y = f y x;
+
+{******************************************************************************
+ * Prefix definitions for infix built-ins.                                    *
+ ******************************************************************************}
+{ Prefix version of infix addition. }
+let \+ a b = a + b;
+{ Prefix version of infix subtraction. }
+let \- a b = a - b;
+{ Prefix version of infix multiplication. }
+let \* a b = a * b;
+{ Prefix version of infix division. }
+let \/ a b = a / b;
+{ Prefix version of infix list constructor. }
+let \:: a b = a::b;
+{ Prefix version of infix less than. }
+let \< a b = a < b;
+{ Prefix version of infix greater than. }
+let \> a b = a > b;
+{ Prefix version of infix less equal than. }
+let \<= a b = a <= b;
+{ Prefix version of infix greater equal than. }
+let \>= a b = a >= b;
+{ Prefix version of infix equal. }
+let \== a b = a == b;
+{ Prefix version of infix not equal. }
+let \!= a b = a != b;
+{ Prefix version of infix logical and. }
+let \&& a b = a && b;
+{ Prefix version of infix logical or. }
+let \|| a b = a || b;
+
+{******************************************************************************
+ * Logic scalar operations.                                                   *
+ ******************************************************************************}
+{**
+ * Logically negation. If the integer x is 0 then it returns 1 (true) else it
+ * returns 0 (false).
+ *
+ * @param e  An integer.
+ * @return  1 (true) if x is 0, 0 (false) else.
+ *}
+let not e = if e == 0 then 1 else 0 end;
+
+{******************************************************************************
+ * Arithmetic scalar operations.                                              *
+ ******************************************************************************}
+{**
+ * Returns the minimum of two comparable values. Comparable values are either
+ * two integers or two strings. Strings are compared according to their ASCII
+ * value.
+ *
+ * @param x  A comparable value.
+ * @param y  A comparable value.
+ * @return  The value that is smaller.
+ *}
+let min x y = if x < y then x else y end;
+
+{**
+ * Returns the maximum of two comparable values. Comparable values are either
+ * two integers or two strings. Strings are compared according to their ASCII
+ * value.
+ *
+ * @param x  A comparable value.
+ * @param y  A comparable value.
+ * @return  The value that is bigger.
+ *}
+let max x y = if x > y then x else y end;
+
+{**
+ * Returns the successor of an integer x.
+ *
+ * @param x  An integer.
+ * @return  The successor of x.
+ *}
+let succ x = x + 1;
+
+{**
+ * Returns the predecessor of an integer x.
+ *
+ * @param x  An integer.
+ * @return  The predecessor of x.
+ *}
+let pred x = x - 1;
+
+{**
+ * Negates an integer x.
+ *
+ * @param x  An integer.
+ * @return  The negated integer -x.
+ *}
+let neg x = 0 - x;
+
+{**
+ * Returns the absolute value of an integer x.
+ *
+ * @param x  An integer.
+ * @return  The absolute integer |x|.
+ *}
+let abs x = if x < 0 then neg x else x end;
+
+{**
+ * Computes the integer faculty x!.
+ *
+ * @param x  A positive integer.
+ * @return  The faculty x!.
+ *}
+let _! x = if x > 1 then x * (x-1)! else 1 end;
+
+{******************************************************************************
+ * List operations.                                                           *
+ ******************************************************************************}
+{**
+ * Creates a numeric list of range [a, b].
+ *
+ * @param a  Lower bound.
+ * @param b  Upper bound.
+ * @return  A list [a, a+1, .., b].
+ *}
+let _.._ a b = if a <= b then a::((a+1)..b) else [] end;
+
+{**
+ * Returns the first element of a list.
+ *
+ * @param l  A list.
+ * @return  The first element of the list.
+ *}
+let hd l = match l with
+     []   -> []
+   | h::t -> h
+end;
+
+{**
+ * Returns the tail of a list by dropping its first element.
+ *
+ * @param l  A list.
+ * @return  The tail of the list.
+ *}
+let tl l = match l with
+     []   -> []
+   | h::t -> t
+end;
+
+{**
+ * Appends two lists.
+ *
+ * @param l1  First list.
+ * @param l2  Second list.
+ * @return  Appended list.
+ *}
+let _@_ l1 l2 = match l1 with
+     []   -> l2
+   | h::t -> h::(t@l2)
+end;
+
+{**
+ * Reverses a list [h1, h2, .., hn].
+ *
+ * @param l  A list.
+ * @return  Reversed list [hn, .., h2, h1].
+ *}
+let rev l = match l with
+     []   -> []
+   | h::t -> (rev t)@[h]
+end;
+
+{**
+ * Returns the length of a list.
+ *
+ * @param l  A list.
+ * @return  The length of the list.
+ *}
+let len l = match l with
+     []   -> 0
+   | h::t -> 1 + len t
+end;
+
+{**
+ * Flattens one level of a nested list [[x1, .., xn], [y1, .., ym], ..].
+ *
+ * @param l  A nested list.
+ * @return  A flattend list [x1, .., xn, y1, .., ym].
+ *}
+let flatten l = match l with
+     []   -> []
+   | h::t -> h@(flatten t)
+end;
+
+{**
+ * Take the n first elements of a list [x1, .. xn, .., xm].
+ *
+ * @param n  The number of taken elements.
+ * @param l  A list.
+ * @return  A sublist [x1, .., xn].
+ *}
+let take n l = match l with
+     []   -> []
+   | h::t -> if n > 0 then h::(take (n-1) t) else [] end
+end;
+
+{**
+ * Take all elements from a list l, as long as they satisfy the predicate p.
+ *
+ * @param p  A predicate, which each element either satisfies or not.
+ * @param l  A list.
+ * @return  A list of elements each satisfying the predicate p.
+ *}
+let takewhile p l = match l with
+     []   -> []
+   | h::t -> if p h then h::(takewhile p t) else [] end
+end;
+
+{**
+ * Drop the n first elements of a list [x1, .. xn, .., xm] and return the
+ * remaining list.
+ *
+ * @param n  The number of dropped elements.
+ * @param l  A list.
+ * @return  A sublist [x(n+1), .., xm].
+ *}
+let drop n l = match l with
+     []   -> []
+   | h::t -> if n > 0 then drop (n-1) t else l end
+end;
+
+{**
+ * Drop all elements from a list l, as long as they satisfy the predicate p.
+ *
+ * @param p  A predicate, which each element either satisfies or not.
+ * @param l  A list.
+ * @return  A chopped list where a non-satisfying element is the head.
+ *}
+let dropwhile p l = match l with
+     []   -> []
+   | h::t -> if p h then dropwhile p t else l end
+end;
+
+{**
+ * Keep all elements of a list l that do satisfy the predicate p, drop all
+ * others.
+ *
+ * @param p  A predicate, which each element either satisfies or not.
+ * @param l  A list.
+ * @return  A list of elements that satisfy the predicate.
+ *}
+let filter p l = match l with
+     []   -> []
+   | h::t -> if p h then h::(filter p t) else filter p t end
+end;
+
+{**
+ * Check if any element of a list l satisfies the predicate p.
+ *
+ * @param p  A predicate, which each element either satisfies or not.
+ * @param l  A list.
+ * @return  1 (true) if at least one element satisfies the predicate p.
+ *}
+let any p l = match l with
+     []   -> 0
+   | h::t -> if p h then 1 else any p t end
+end;
+
+{**
+ * Check if all elements of a list l satiesfy the predicate p.
+ *
+ * @param p  A predicate, which each element either satisfies or not.
+ * @param l  A list.
+ * @return  1 (true) if all elements satisfy the predicate p.
+ *}
+let all p l = match l with
+     []   -> 1
+   | h::t -> if p h then all p t else 0 end
+end;
+
+{******************************************************************************
+ * Arithmetic list operations.                                                *
+ ******************************************************************************}
+{**
+ * Sums all elements of a list.
+ *
+ * @param l  A list of integers.
+ * @return  The sum of all elements of the list.
+ *}
+let sum l = match l with
+     []   -> 0
+   | h::t -> h + sum t
+end;
+
+{**
+ * Multiplies all elements of a list.
+ *
+ * @param l  A list of integers.
+ * @return  The product of all elements of the list.
+ *}
+let prod l = match l with
+     []   -> 1
+   | h::t -> h * prod t
+end;
+
+{**
+ * Finds the minimum value of a list l of comparable values. Comparable values
+ * are either two integers or two strings. Strings are compared according to
+ * their ASCII value.
+ *
+ * @param l  A list of comparable values.
+ * @return  The minimum value.
+ *}
+let minimum l = match l with
+     []   -> "'List for minimum function cannot be nil.'"
+   | h::t -> foldr min h t
+end;
+
+{**
+ * Finds the maximum value of a list l of comparable values. Comparable values
+ * are either two integers or two strings. Strings are compared according to
+ * their ASCII value.
+ *
+ * @param l  A list of comparable values.
+ * @return  The maximum value.
+ *}
+let maximum l = match l with
+     []   -> "'List for maximum function cannot be nil.'"
+   | h::t -> foldr max h t
+end;
+
+{******************************************************************************
+ * Logical list operations.                                                   *
+ ******************************************************************************}
+{**
+ * Logically ANDs all elements of an integer list.
+ *
+ * @param l  A list of integers.
+ * @return  1 (true) if all elements are 1 (true).
+ *}
+let and l = match l with
+     []   -> 1
+   | h::t -> h && and t
+end;
+
+{**
+ * Logically ORs all elements of an integer list.
+ *
+ * @param l  A list of integers.
+ * @return  1 (true) if at least one element is 1 (true).
+ *}
+let or l = match l with
+     []   -> 0
+   | h::t -> h || or t
+end;
+
+{******************************************************************************
+ * Higher order list operations.                                              *
+ ******************************************************************************}
+{**
+ * Applies a function f to each element in a list [x1, x2, .., xn].
+ *
+ * @param f  A single-argument function.
+ * @param l  A list.
+ * @return  A list [f x1, f x2, .., f xn]
+ *}
+let map f l = match l with
+     []   -> []
+   | h::t -> (f h)::(map f t)
+end;
+
+{**
+ * Folds left the elements of a list [h1, h2, .., hn] such that
+ * f(hn, f(hn-1, .., f(h1, b) .. )).
+ *
+ * @param f  Two-argument function.
+ * @param b  Start value for the leftmost function application.
+ * @param l  A list [h1, h2, .., hn].
+ * @return  f(hn, f(hn-1, .., f(h1, b) .. ))
+ *}
+let foldl f b l = match l with
+     []   -> b
+   | h::t -> foldl f (f h b) t
+end;
+
+{**
+ * Folds left the elements of a list [h1, h2, .., hn] such that
+ * f(f(f(b, hn), hn-1) .., h1).
+ *
+ * @param f  Two-argument function.
+ * @param b  Start value for the leftmost function application.
+ * @param l  A list [h1, h2, .., hn].
+ * @return  f(f(f(b, hn), hn-1) .., h1)
+ *}
+let foldl2 f b l = match l with
+     []   -> b
+   | h::t -> f (foldl2 f b t) h
+end;
+
+{**
+ * Folds right the elements of a list [h1, h2, .., hn] such that
+ * f(h1, f(h2, .., f(hn, b) .. )).
+ *
+ * @param f  Two-argument function.
+ * @param b  Start value for the rightmost function application.
+ * @param l  A list [h1, h2, .., hn].
+ * @return  f(h1, f(h2, .., f(hn, b) .. ))
+ *}
+let foldr f b l = match l with
+     []   -> b
+   | h::t -> f h (foldr f b t)
+end;

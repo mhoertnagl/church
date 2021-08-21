@@ -1,0 +1,26 @@
+data Atom a
+   | Not p
+   | And p q
+   | Or p q
+;
+
+let implies p q = Or (Not p) q;
+
+let show p = match p with
+     Atom a  -> a
+   | Not q   -> "'(~'" + (show q) + "')'"
+   | And q r -> "'('" + (show q) + "'&'" + (show r) + "')'"
+   | Or q r  -> "'('" + (show q) + "'|'" + (show r) + "')'"
+end;
+
+let nnf p = match p with
+     Atom a  -> Atom a
+   | Not q   -> match q with
+                     Atom b  -> Not (Atom b)
+                   | Not r   -> nnf r
+                   | And r s -> nnf (Or (Not r) (Not s))
+                   | Or r s  -> nnf (And (Not r) (Not s))
+                end
+   | And q r -> And (nnf q) (nnf r)
+   | Or q r  -> Or (nnf q) (nnf r)
+end;
